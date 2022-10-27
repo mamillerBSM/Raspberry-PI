@@ -1,5 +1,4 @@
 import time
-
 from board import SCL, SDA
 import busio
 
@@ -8,15 +7,16 @@ import busio
 from adafruit_motor import servo
 from adafruit_pca9685 import PCA9685
 
+# Create an I2C instance from the I2C class
 i2c = busio.I2C(SCL, SDA)
 
 # Create a simple PCA9685 class instance.
-pca = PCA9685(i2c)
+hat = PCA9685(i2c)
 # You can optionally provide a finer tuned reference clock speed to improve the accuracy of the
 # timing pulses. This calibration will be specific to each board and its environment. See the
 # calibration.py example in the PCA9685 driver.
 # pca = PCA9685(i2c, reference_clock_speed=25630710)
-pca.frequency = 50
+hat.frequency = 50
 
 # To get the full range of the servo you will likely need to adjust the min_pulse and max_pulse to
 # match the stall points of the servo.
@@ -47,25 +47,42 @@ pca.frequency = 50
 #for i in range(180):
 #    servo7.angle = 180 - i
 #    time.sleep(0.03)
-
+#************************************************************************************************
+# First check all 16 of the Adafruit HAT's PWM outputs with a real standard servo motor
 t = 1.0
 angle1 = 60
 angle2 = 10
 print("This program tests the Adafruit 16-channel PWM/Servo HAT by instructing the user to sequentially connect a standard servo on each PWM channel and then exercising the servo for a number of cycles")
 
 for j in range(16):
-	servo7 = servo.Servo(pca.channels[j], min_pulse=500, max_pulse=2600)
+	servo7 = servo.Servo(hat.channels[j], min_pulse=500, max_pulse=2600)
 	input("Please connect the servo to the Adafruit HAT channel " + str(j) + " and then press Enter to execute the test..." )
 	for i in range(5):
-		print("Cycle: " +str(i))
+		print("--- Cycle #" +str(i) + "---")
 		servo7.angle = angle1
 		time.sleep(t)
-		print("At " + str(servo7.angle)+ " degrees")
+		print("Servo is now at " + str(servo7.angle)+ " degrees")
 		servo7.angle = angle2
-		print("At " + str(servo7.angle)+ "degrees")
+		print("Servo is now at " + str(servo7.angle)+ "degrees")
 		time.sleep(t)
-	input("Servo test on channel " + str(j) + " is complete.  Disconnect the servo now and then press Enter to continue...")
+	input("Servo test on PWM channel " + str(j) + " is complete.  Disconnect the servo now and then press Enter to continue...")
 
+# Now test all 16 PWM channels for their ability to light up an LED to max brightness level
+# Make sure that all 16 channels of the Adafruit 16-channel Servo HAT are set OFF (i.e zero brightness)
+for i in range(16):
+	led_channel = hat.channels[i]
+	led_channel.duty_cycle = 0x0000
+
+# Begin stepping through all 16 PWM channels starting at 0:
+
+for i in range(16):
+	input("Please connect LED to HAT channel " + str(i) + "  and then hit Enter to begin the test...")
+	led_channel = hat.channels[i]
+	led_channel.duty_cycle = 0xffff
+	print("LED channel " + str(i) + " brightness set to ON")
+	input("Press Enter to turn off LED on Channel " + str(i) + "...")
+	led_channel.duty_cycle = 0x0000
+	print("LED channel " + str(i) + " brightness set to OFF")
 
 # You can also specify the movement fractionally.
 #fraction = 0.0
@@ -74,4 +91,4 @@ for j in range(16):
 #    fraction += 0.01
 #    time.sleep(0.03)
 
-pca.deinit()
+hat.deinit()
